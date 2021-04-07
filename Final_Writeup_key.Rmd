@@ -1,0 +1,84 @@
+---
+title: "506 Project 3"
+output: pdf_document 
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(rstanarm)
+library(readxl)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#### Data Overview
+
+Consider the data collected in the following article ["Correlational data concerning body centre of mass acceleration, muscle activity, and forces exerted during a suspended lunge under different stability conditions in high-standard track and field athletes"](https://www.sciencedirect.com/science/article/pii/S2352340919312673). (link: [https://www.sciencedirect.com/science/article/pii/S2352340919312673](https://www.sciencedirect.com/science/article/pii/S2352340919312673))
+
+Ten athletes perform 4 different types of lunges, see figure in appendix for details on lunges. For each lunge type an athlete repeats three replicates, from which a variety of measurements are recorded. A dataset is provided that contains the acceleration measurement and the contraction of the vastus medialis muscle. Construct a model and to address how `acceleration` differs between `lunge type` as a function of vastus medialis contraction (`muscle`), while also controlling for repeated measures on the athletes.
+
+```{r, message = F, echo = F}
+subject_data <- read_xlsx('lunges.xlsx', sheet = "Sample" ) %>% slice(1:10) %>% 
+  mutate(subject = 1:n()) %>% select(-...1, -Sport, -`Leg dominance`,-`Hours of training`)
+
+write_csv(subject_data, path = 'subject_data.csv')
+
+lunge_data <- read_xlsx('lunges.xlsx', sheet = "Correlation_ACCEL_Force" )  %>% slice(1:30) %>%
+  mutate(subject = rep(1:10, each = 3),
+         replicate = rep(1:3, 10)) %>%
+  mutate(Lunge = as.numeric(`Suspended_Lunge_Accel`),
+         Lunge_Bosu_up = as.numeric(`Suspended Lunge_Bosu_up_Accel`),
+         Lunge_Bosu_down = as.numeric(`Suspended Lunge_Bosu_down_Accel`),
+         Lunge_Foam = as.numeric(`Suspended Lunge_Foam_Accel`)) %>% 
+    select(subject, replicate, Lunge, Lunge_Bosu_up, Lunge_Bosu_down, Lunge_Foam) %>%
+  pivot_longer(-c(subject,replicate))
+
+muscle_data <- read_xlsx('muscle.xlsx')
+
+data_out <- lunge_data %>% left_join(muscle_data) %>% rename(acceleration = value, lunge_type = name)
+write_csv(data_out, path = 'lunge_final.csv')
+```
+
+```{r}
+subject_data <- read_csv('subject_data.csv')
+lunge_final <- read_csv('lunge_final.csv')
+```
+
+While the project is open book and you can use any resources from class or freely available on the internet, this is strictly an individual endeavor and **you should not discuss the problems with anyone outside the course instructor including group mates or class members.** All resources, including websites, should be acknowledged.
+
+Turn in the project to GitHub and include the R Markdown code and a PDF file with output. Please verify that all of the code has compiled and the graphics are included. Include all of the code in the appendix, but do not print code in the document itself.
+
+\newpage
+
+#### Rubric
+
+__Report generalities:__ 
+
+- Spelling, grammar, writing clarity, paragraphs, section labels 
+- Citations/Acknowledgments for papers and packages used 
+- Code in appendix
+
+
+__Introduction + Data Overview:__
+
+- Variables with units and descriptive statistics 
+- Data Viz: Figure Clarity (Titles, Labels, and Captions)
+
+__Statistical Procedures:__ 
+
+- Define model to fit with complete notation (including priors, if applicable) 
+- Account for repeated measures of athletes
+- Defense of model choice
+
+__Results + Discussion:__
+
+- Discuss Results in the context of the research question
+- Summarize estimates from final model including uncertainty 
+
+\newpage
+
+#### Appendix
+```{r, fig.align='center', fig.height= 2, fig.width=2, echo = F}
+knitr::include_graphics(path = "lunges.pdf")
+```
